@@ -4,7 +4,7 @@
 // @description  中文化 GitHub 界面的菜单、按钮及常见文本
 // @copyright    godzilla818
 // @icon         https://github.githubassets.com/pinned-octocat.svg
-// @version      1.0
+// @version      1.2
 // @author       godzilla818
 // @license      GPL-3.0
 // @match        https://github.com/*
@@ -182,7 +182,7 @@
         secretKey: GM_getValue('tencentSecretKey', ''),
         region: 'ap-beijing',
         projectId: 0,
-        enable: true       // 是否启用API翻译
+        enable: GM_getValue('tencentEnable', true)       // 是否启用API翻译
     };
 
     // 翻译缓存
@@ -668,6 +668,14 @@
 
             panel.innerHTML = `
                 <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">腾讯云翻译设置</h3>
+                <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+                    <label style="font-size: 14px; font-weight: 600;">启用腾讯云翻译</label>
+                    <div style="position: relative; display: inline-block; width: 50px; height: 26px; cursor: pointer;">
+                        <input type="checkbox" id="tencent-enable" ${TENCENT_CONFIG.enable ? 'checked' : ''} style="opacity: 0; width: 0; height: 0;">
+                        <span id="toggle-bg" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: ${TENCENT_CONFIG.enable ? '#2ea44f' : '#ccc'}; transition: .4s; border-radius: 26px; pointer-events: auto;"></span>
+                        <span id="toggle-slider" style="position: absolute; height: 20px; width: 20px; left: ${TENCENT_CONFIG.enable ? '26px' : '4px'}; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; pointer-events: auto;"></span>
+                    </div>
+                </div>
                 <div style="margin-bottom: 16px;">
                     <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 600;">SecretId</label>
                     <input type="text" id="tencent-secret-id" placeholder="请输入 SecretId" 
@@ -708,6 +716,20 @@
             document.body.appendChild(overlay);
             document.body.appendChild(panel);
 
+            // 开关交互
+            const enableCheckbox = document.getElementById('tencent-enable');
+            const toggleBg = document.getElementById('toggle-bg');
+            const toggleSlider = document.getElementById('toggle-slider');
+            
+            const toggleSwitch = () => {
+                enableCheckbox.checked = !enableCheckbox.checked;
+                toggleBg.style.backgroundColor = enableCheckbox.checked ? '#2ea44f' : '#ccc';
+                toggleSlider.style.left = enableCheckbox.checked ? '26px' : '4px';
+            };
+            
+            toggleBg.addEventListener('click', toggleSwitch);
+            toggleSlider.addEventListener('click', toggleSwitch);
+
             // 取消按钮
             document.getElementById('cancel-btn').addEventListener('click', () => {
                 document.body.removeChild(panel);
@@ -716,12 +738,15 @@
 
             // 保存按钮
             document.getElementById('save-btn').addEventListener('click', () => {
+                const enable = document.getElementById('tencent-enable').checked;
                 const secretId = document.getElementById('tencent-secret-id').value.trim();
                 const secretKey = document.getElementById('tencent-secret-key').value.trim();
 
+                GM_setValue('tencentEnable', enable);
                 GM_setValue('tencentSecretId', secretId);
                 GM_setValue('tencentSecretKey', secretKey);
 
+                TENCENT_CONFIG.enable = enable;
                 TENCENT_CONFIG.secretId = secretId;
                 TENCENT_CONFIG.secretKey = secretKey;
 
@@ -729,9 +754,11 @@
                 document.body.removeChild(overlay);
 
                 GM_notification({
-                    text: '密钥设置已保存',
+                    text: '设置已保存',
                     timeout: 2000
                 });
+                
+                location.reload();
             });
 
             // 重置统计按钮
